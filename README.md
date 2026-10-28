@@ -11,6 +11,12 @@ The desk's exported logic groups them into two problems:
 These counts supersede earlier drafts, which counted overlapping export rows and used
 browser locale instead of tenant configuration. The old issues remain closed for history.
 
+## Engineering update
+
+The course subsequently reported #4471 closed on 5 October:
+- Parser: fixed by `fix(dates): parse dd/mm for eu locales`; #11 closed as completed.
+- Hint: won't fix because booking-v3 was retired; #12 closed as not planned.
+
 ## Deliverables
 
 - **Signed source:** [src/routes/kb/incidents/4471-triage/+page.svx](src/routes/kb/incidents/4471-triage/+page.svx)

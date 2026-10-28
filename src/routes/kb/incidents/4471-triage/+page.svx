@@ -2,7 +2,7 @@
 layout: runbook
 title: '#4471 · split by cause'
 owner: OldMetalmind and pi
-status: filed
+status: closed
 reviewed: '2026-10-28'
 signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMxODkzMjgsImV4cCI6MTc5MzI3NTcyOH0.HOS1zCwBOaRMwcIZ7Wz6bqfR1AazxEc-w4tgF3ny53c
 ---
@@ -52,7 +52,17 @@ Booking-v3 prints `MM/DD/YYYY`. People follow that month-first hint, but the for
 their input in the tenant's day-first order. Make the visible hint and accepted input
 agree. Fixing the shared parser alone does not fix this separate path.
 
-The tickets are filed; no code fix, scheduled release, or engineering commitment is claimed.
+## Engineering disposition — 5 October
+
+After the first accepted submission, the course published an engineering update:
+[#4471 closed 05 Oct](https://hq.mega.dev/challenges/what-it-shows).
+
+- **Parser — fixed:** `fix(dates): parse dd/mm for eu locales`. Issue #11 is closed as completed.
+- **Hint — won't fix:** booking-v3 form retired. Issue #12 is closed as not planned, not as fixed.
+
+This update is separate from the 4 October export. The table above preserves that
+historical snapshot; its open-ticket wording is not the present engineering status.
+These outcomes are reported by the course, not fixes implemented by this harness.
 
 ## When reports arrived versus when they were merged
 
