@@ -1,0 +1,59 @@
+---
+layout: runbook
+title: '#4471 · Hint issue (34 reports)'
+owner: harness triage
+status: filed
+reviewed: 2026-10-28
+signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMxODIyMzQsImV4cCI6MTc5MzI2ODYzNH0.pS3recltiS_OwUHZTZNnFgVzwgoCwxgFWpy3kUTg1ZQ
+---
+
+<script>
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+</script>
+
+## Hint Issue: Form misleads day-first users
+
+**34 reports** from ticket #4471
+
+Booking form v3 shows "MM/DD/YYYY" hint to all users, but users in day-first locales (de-DE, es-ES, pt-PT) naturally type DD/MM, causing misinterpretation.
+
+<Callout>
+Root cause identified. Fix queued. GitHub issue: #12
+</Callout>
+
+### How it fails
+
+- User in Germany sees booking form with hint "MM/DD/YYYY"
+- User naturally types "12/3" (meaning March 12 in German convention DD/MM)
+- User assumes the hint is just informational; they type their own way
+- Form interprets "12/3" according to the hint: December 3
+- Date is wrong
+
+### Affected tenants
+
+- alder.physio (de-DE, booking-v3): 12 reports
+- copper.studio (es-ES, booking-v3): 11 reports
+- pale.harbour (pt-PT, booking-v3): 11 reports
+
+### Affected channel
+
+Form-based bookings only (booking-v3)
+
+### Root cause
+
+Form hint is hardcoded to MM/DD regardless of user locale.
+
+### Fix approach
+
+1. Detect user's locale dynamically
+2. Show locale-appropriate hint: "DD/MM/YYYY" for day-first, "MM/DD/YYYY" for month-first
+3. Parse input according to the hint shown
+
+### GitHub issue
+
+[#12: Hint issue (34 reports) — form misleads day-first users](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/12)
+
+---
+
+<RenderStamp {signature} />

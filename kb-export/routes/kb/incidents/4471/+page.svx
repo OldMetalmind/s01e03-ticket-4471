@@ -31,8 +31,8 @@ Known. Two distinct problems, two fixes queued. See the triage page.
 
 Full analysis and GitHub issue links: https://github.com/OldMetalmind/s01e03-ticket-4471
 
-- **Issue #11**: Parser issue (393 reports) — month-first parser, day-first tenants
-- **Issue #12**: Hint issue (34 reports) — form misleads day-first users
+- **Issue #11**: [Parser issue (393 reports)](./4471-parser) — month-first parser, day-first tenants  
+- **Issue #12**: [Hint issue (34 reports)](./4471-hint) — form misleads day-first users
 
 ## Since April
 
