@@ -1,6 +1,6 @@
 ---
 layout: runbook
-title: '#4471 · triage analysis: 5 distinct problems'
+title: '#4471 · triage analysis: 3 technical root causes'
 owner: harness triage
 status: in-progress
 reviewed: 2026-10-28
@@ -13,138 +13,113 @@ signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYX
 
 ## Triage Summary
 
-Merged ticket **#4471** contains **427 reports** across **5 distinct problems**. The original desk classification treated this as one issue, but secondary analysis reveals multiple independent bugs affecting date and time handling in `sched-prod`.
+Merged ticket **#4471** contains **427 reports** across **3 technical root causes**. The desk's own categorization (in `causes.ts`) groups reports by the mechanism that caused them, not by symptoms.
 
-## Problems Identified
+## Root Causes
 
-### 1. Wrong Day of Week on Invite — 111 reports
-
-**Severity**: High  
-**Status**: Open ([GitHub #1](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/1))
-
-Calendar invites display incorrect day-of-week names, causing customers to arrive on the wrong day even when the underlying date is correct.
-
-**Example**: Booking for Monday 11 May gets invite saying "Tuesday 12 May". Customer arrives Monday; appointment is missed.
-
-**Affected locales**: en-GB (27), en-US (12), pl-PL (10), nl-NL (9), da-DK (9), and others.
-
-**Root cause**: Day-of-week calculation bug in invite generation or date serialization. May be related to timezone offset or date rounding in the day-name lookup code.
-
----
-
-### 2. Date Format Parsing Error: DD/MM vs MM/DD Confusion — 132 reports
-
-**Severity**: High  
-**Status**: Open ([GitHub #7](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/7))
-
-Dates are parsed or stored with month and day swapped, causing cascading failures across the system. This is the root cause of both:
-- Booking mismatches (UI shows one date, invite shows another)
-- Locale-specific format reversals
-
-**Examples**:
-- "Booking shows 3 October in UI but invite says 10 March" — day and month completely swapped
-- "Every booking in June is one day off. Only June." — systematic parsing error for specific date ranges
-- Invite says "Tuesday 12 May" when calendar booked for "Monday 11 May"
-
-**Affected locales**: en-GB (15), it-IT (7), de-DE (4), pl-PL (4), fr-FR (4), pt-PT (4), en-US (4), and others.
-
-**Root cause**: Date parsing or serialization logic incorrectly handles locale-specific date formats:
-- System expects MM/DD but receives DD/MM (or vice versa)
-- Inconsistent format handling between UI layer and backend API
-- Date transformation that doesn't account for locale context
-- Possible issue with CLDR locale data vs hardcoded format strings
-
----
-
-### 3. Appointment Auto-Moved Without User Action — 34 reports
+### 1. Parser Issue: Month-first parser, day-first tenants — 369 reports
 
 **Severity**: Critical  
-**Status**: Open ([GitHub #4](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/4))
+**Status**: Open ([GitHub #8](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/8))
 
-Appointments automatically change date/time by several months without user action. This is a **data integrity issue** that destroys customer trust.
+The shared date parser reads all dates with month first. Tenants in day-first locales (en-GB, it-IT, de-DE, etc.) type dates as DD/MM, but the parser interprets them as MM/DD, causing a consistent inversion.
 
-**Example**: Appointment moves from 7 April to 4 July (3 months forward).
+**How it works**:
+- User in Italy (day-first locale) books an appointment for "12/3" (March 12 in DD/MM format)
+- Parser reads "12/3" as "month 12, day 3" (December 3)
+- Date flips every time it passes through the parser
+- Bookings, invites, and reminders all show the wrong date
 
-**Root cause**: Unknown. Suspects:
-- Background job with incorrect date recalculation logic
-- Database trigger with wrong math
-- Scheduled task that runs unexpectedly
+**Affected locales**: en-GB, en-IE, it-IT, fr-FR, de-DE, nl-NL, da-DK, pt-PT, es-ES, pl-PL, cs-CZ
 
-**Investigation**: Check cron jobs, background workers, and data migration logs from April onwards.
+**Channels**: Primarily app and email reports (369 reports)
 
----
+**Root cause**: The parser was written for MM/DD-first locales and never updated to respect locale-specific date conventions via `Intl.DateTimeFormat` or similar.
 
-### 4. Reminder Sent on Wrong Date — 37 reports
-
-**Severity**: Medium  
-**Status**: Open ([GitHub #5](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/5))
-
-Appointment reminders are sent weeks or months before/after the actual appointment.
-
-**Example**: "Customer booked 6 November and got an invite for 11 June."
-
-**Root cause**: Reminder scheduling uses wrong date:
-- Timezone mismatch
-- Date format parsing error
-- Off-by-one or off-by-month calculation
+**Fix approach**:
+1. Detect tenant locale in booking/invite pipeline
+2. Use locale-aware date parsing (Intl API)
+3. Ensure all date conversions respect the locale's natural date order
 
 ---
 
-### 5. Other Date/Time Issues — 113 reports
+### 2. Hint Issue: Form misleads day-first users — 16 reports
 
-**Severity**: Medium  
-**Status**: Open ([GitHub #6](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/6))
+**Severity**: High  
+**Status**: Open ([GitHub #9](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/9))
 
-113 reports (26% of merged ticket) don't fit cleanly into categories above. Likely contain:
-- Additional timezone issues
-- Locale-specific edge cases
-- Recurring patterns not yet identified
+Booking form v3 shows "MM/DD/YYYY" hint to users in day-first locales, contradicting their natural date format. Users follow the hint as instructed but the form parses their input incorrectly.
 
-**Next step**: Secondary triage required on sample of 20-30 reports to find patterns and potentially split into sub-issues.
+**How it works**:
+- User in Italy sees booking form with hint "MM/DD/YYYY"
+- User naturally types "12/3" (meaning March 12 in Italian convention)
+- User assumes the hint is just informational; they type their own way
+- Form interprets "12/3" according to the hint: December 3
+- Date is wrong
+
+**Affected channels**: Form-based bookings only (16 reports)
+
+**Affected forms**: booking-v3 with day-first locales
+
+**Root cause**: Form hint is hardcoded to MM/DD regardless of user locale.
+
+**Fix approach**:
+1. Detect user's locale
+2. Show locale-appropriate hint: "DD/MM/YYYY" for day-first, "MM/DD/YYYY" for others
+3. Parse input according to the hint shown
+
+---
+
+### 3. Unplaced Issues: Beyond parser/hint — 42 reports
+
+**Severity**: Unknown  
+**Status**: Open ([GitHub #10](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/10))
+
+42 reports don't fit the parser/hint pattern. These came from non-day-first locales (en-US, etc.) or exhibit different patterns entirely.
+
+**Possible root causes**:
+- **Timezone handling**: Different systems use different timezone assumptions, causing dates to shift
+- **Reminder scheduling**: Separate bug in reminder date calculation
+- **Appointment auto-move**: Background job with incorrect date math
+- **Day-of-week calculation**: Separate bug in day-name lookup
+- **Locale edge cases**: Special handling needed for specific date ranges or forms
+
+**Investigation needed**:
+1. Sample 5-10 reports from this category
+2. Look for common patterns (timezone? specific dates? feature interactions?)
+3. File separate issues for each distinct sub-problem found
 
 ---
 
 ## Coverage
 
-- **Categorized**: 314 reports (74%)
-- **Unclassified**: 113 reports (26%)
+- **Parser issues**: 369 reports (86%)
+- **Hint issues**: 16 reports (4%)
+- **Unplaced**: 42 reports (10%)
 - **Total**: 427 reports
 
-## Locales Affected
+## Affected Locales
 
-All 12 tracked locales show issues:
-- en-GB: 91 reports
-- en-US: 42 reports  
-- pl-PL: 38 reports
-- it-IT: 37 reports
-- nl-NL: 36 reports
-- fr-FR: 32 reports
-- cs-CZ: 27 reports
-- da-DK: 27 reports
-- pt-PT: 27 reports
-- es-ES: 24 reports
-- de-DE: 23 reports
-- en-IE: 23 reports
+**Day-first locales** (affected by parser and hint issues):
+- en-GB (91), en-IE (23), it-IT (37), fr-FR (32), de-DE (23), nl-NL (36), da-DK (27), pt-PT (27), es-ES (24), pl-PL (38), cs-CZ (27)
+
+**Month-first locales** (unplaced issues):
+- en-US (42)
 
 ## GitHub Issues
 
-All 5 distinct problems have been filed as separate issues in the public triage repo:
+All 3 root causes have been filed as separate issues:
 
-- [Issue #1: Wrong Day of Week on Invite](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/1) — 111 reports
-- [Issue #4: Appointment Auto-Moved Without User Action](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/4) — 34 reports
-- [Issue #5: Reminder Sent on Wrong Date](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/5) — 37 reports
-- [Issue #6: Other Date/Time Issues (Triage Required)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/6) — 113 reports
-- [Issue #7: Date Format Parsing Error (DD/MM vs MM/DD)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/7) — 132 reports
-
-(Issues #2 and #3 were merged into #7)
+- [Issue #8: Parser issue (369 reports)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/8)
+- [Issue #9: Hint issue (16 reports)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/9)
+- [Issue #10: Unplaced issues (42 reports)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/10)
 
 ## Lessons
 
-- A merged ticket that looks like one issue often contains multiple independent bugs.
-- Overlapping categories signal a root cause that spans multiple surface symptoms. When two categories describe the same underlying failure, merge them.
-- Locale-aware date handling requires consistent application across all systems (booking, invite, reminder, display).
-- A 26% "other" category is a signal to continue triage, not a reason to stop.
-- Categorization requires reading individual reports, not just subject lines.
+- A merged ticket requires understanding the desk's own categorization framework before filing tickets.
+- Technical root causes (how the bug happens) matter more than symptoms (what users see).
+- Locale handling is systematic: date parsing must respect `Intl.DateTimeFormat` across the entire stack.
+- 10% unplaced issues suggests the framework covers most cases but needs refinement for edge cases.
 
 ---
 
