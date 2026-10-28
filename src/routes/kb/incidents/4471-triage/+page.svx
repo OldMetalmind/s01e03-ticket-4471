@@ -1,0 +1,85 @@
+---
+layout: runbook
+title: '#4471 · split by cause'
+owner: OldMetalmind and pi
+status: filed
+reviewed: '2026-10-28'
+signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMxODkzMjgsImV4cCI6MTc5MzI3NTcyOH0.HOS1zCwBOaRMwcIZ7Wz6bqfR1AazxEc-w4tgF3ny53c
+---
+
+<script>
+  import CauseTable from '#lib/kb/CauseTable.svelte';
+  import QueueTimeline from '#lib/kb/QueueTimeline.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+  import TriageSummary from '#lib/kb/TriageSummary.svelte';
+</script>
+
+## Two problems, not one fix
+
+The desk filed date reports together in #4471. Its exported view separates the shared
+parser from a misleading booking-form hint. These require different fixes.
+
+<TriageSummary />
+
+## Reports as the desk counts them
+
+<CauseTable ticket={4471} />
+
+The table is the exported desk view. Its “no ticket of its own” label describes that
+snapshot; the newly filed issue #12 below supplies the missing ticket. This is not a
+live GitHub status view.
+
+Report IDs count once, even when overlapping export pages repeat a row.
+Classification uses the tenant directory's locale and booking form, not the reporter's
+browser locale, intake tag, or subject. The five reports the desk read as one-day moves
+stay filed under the parser cause; they are not a third issue.
+
+## Tickets filed
+
+### Shared parser reads month first
+
+[Issue #11: parser](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/11)
+
+The shared parser treats dates as month-first while the tenant writes day-first.
+An ambiguous day/month pair is reversed. Correct the shared parser's date-order contract;
+test ambiguous dates against the tenant's expected date order.
+
+### Booking-v3 hint disagrees with the form
+
+[Issue #12: hint](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/12)
+
+Booking-v3 prints `MM/DD/YYYY`. People follow that month-first hint, but the form reads
+their input in the tenant's day-first order. Make the visible hint and accepted input
+agree. Fixing the shared parser alone does not fix this separate path.
+
+The tickets are filed; no code fix, scheduled release, or engineering commitment is claimed.
+
+## When reports arrived versus when they were merged
+
+<QueueTimeline ticket={4471} />
+
+The received and merged bars describe different events. A merge spike does not establish
+a new incident or a surge of newly received reports.
+
+## What this changes in the KB
+
+The original incident's “one issue, one fix” claim does not match its own cause table.
+The triage rule groups matching subjects, but matching subjects need not mean the same cause,
+and different subjects can describe the same cause. Check the tenant and entry path.
+The old triage page is stale by the KB's review-age rule; its accepted status is not proof
+that its guidance still fits the exported evidence.
+
+This page records findings from the supplied export. It does not silently rewrite
+[accepted decision 0001](/kb/decisions/0001-dedupe-by-subject/), which must remain immutable.
+Any replacement decision needs a new numbered record.
+
+## Scope and reproducibility
+
+Counts describe the supplied 2026-10-04 export, not the live support queue.
+The desk keeps working after that snapshot. Rebuild the components when data changes;
+do not copy stale counts into prose.
+
+Run `npm run check` to validate deduplication and grouping, then `npm run build` to render
+the KB. The rendered HTML is committed under `rendered/`.
+
+<RenderStamp {signature} />

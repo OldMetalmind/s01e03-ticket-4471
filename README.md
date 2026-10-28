@@ -1,78 +1,51 @@
-# Ticket #4471 Triage
+# S01E03 — Ticket #4471 triage
 
-Secondary triage and analysis of support ticket #4471: "dates parse mm/dd in eu locales"
+The supplied export contains 427 rows but **412 unique reports**.
+The desk's exported logic groups them into two problems:
 
-## Summary
+| Ticket | Problem | Unique reports |
+| --- | --- | ---: |
+| [#11](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/11) | Shared parser reads month first for day-first tenants | 379 |
+| [#12](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/12) | Booking-v3's MM/DD hint contradicts tenant-order parsing | 33 |
 
-The original merged ticket contains **427 reports** across **2 distinct root causes** according to the support desk's own categorization logic.
+These counts supersede earlier drafts, which counted overlapping export rows and used
+browser locale instead of tenant configuration. The old issues remain closed for history.
 
-### Root Causes
+## Deliverables
 
-| Issue | Problem | Reports |
-|-------|---------|---------|
-| #11 | Parser issue (month-first parser, day-first tenants) | 393 |
-| #12 | Hint issue (form shows wrong date hint) | 34 |
+- **Signed source:** [src/routes/kb/incidents/4471-triage/+page.svx](src/routes/kb/incidents/4471-triage/+page.svx)
+- **Rendered HTML:** [rendered/kb/incidents/4471-triage/index.html](rendered/kb/incidents/4471-triage/index.html)
+- **Screenshot:** [rendered/4471-triage.png](rendered/4471-triage.png)
+- **Export conventions:** [KB-README.md](KB-README.md)
 
-**Total**: 427 reports (100% coverage)
+The rendered HTML is the output of the actual Svelte components, not a manually
+retyped approximation. Download the rendered directory and serve it to view styling
+and interactive assets; GitHub's file viewer displays HTML source rather than running it.
 
-## GitHub Issues
+## Build and view
 
-Each root cause has been filed as a separate issue:
+Requires Node.js 24 (the verification script imports TypeScript directly).
 
-- [#11: Parser issue (393 reports)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/11)
-- [#12: Hint issue (34 reports)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/12)
-
-## Knowledge Base
-
-Full triage analysis and desk's categorization view: `kb-export/routes/kb/triage/4471-triaged/+page.svx`
-
-This page includes:
-- The desk's own CauseTable showing their categorization
-- Full details of each root cause
-- Triage methodology
-- Links to both GitHub issues
-
-## Files
-
-- `kb-export/` — Support knowledge base export with triage completion page
-- `README.md` — This file
-
-## Affected Components
-
-**Parser issue (393 reports)**:
-- App channel: ~186 reports (most affected)
-- Email channel: ~159 reports
-- Form channel: ~48 reports
-- Locales: en-GB, en-IE, it-IT, fr-FR, de-DE, nl-NL, da-DK, pt-PT, es-ES, pl-PL, cs-CZ
-- All 11 tenants affected
-
-**Hint issue (34 reports)**:
-- Channel: Form-based bookings only (booking-v3)
-- Affected tenants:
-  - alder.physio (de-DE): 12 reports
-  - copper.studio (es-ES): 11 reports
-  - pale.harbour (pt-PT): 11 reports
-
-## Desk's Categorization Logic
-
-The desk uses `src/lib/kb/causes.ts` to categorize reports:
-
-```typescript
-type Cause = 'parser' | 'hint';
-
-// Parser: day-first locale + month-first parser = dates inverted
-// Applies to: app/email channels, OR form channel with DD/MM hint
-// Count: 393 reports
-
-// Hint: form channel with MM/DD hint + day-first locale
-// Users follow form hint but type their native format
-// Count: 34 reports
+```sh
+npm ci
+npm run check
+npm run build
+npm run preview
 ```
 
-## Next Steps
+Open the URL Vite prints, followed by `/kb/incidents/4471-triage/`.
+The build writes the entire static KB to `rendered/`.
 
-1. **Engineers**: Review each GitHub issue for implementation
-2. **Parser fix**: Implement locale-aware date parsing with Intl.DateTimeFormat
-3. **Hint fix**: Update form to show locale-appropriate date hint
-4. **Testing**: Add locale-specific date handling tests across all systems
-5. **Verification**: Retest with the 427 original reports after fixes
+The original export's files are preserved under `src/`, including the accepted
+decision record. New files supply the report and computed summary.
+No dependency was installed outside this S01E03 working folder.
+
+## Counting rules
+
+Use the original `uniqueById`, filter `mergedInto === 4471`, then use
+`groupByCause` with the tenant directory. Browser locale, intake tag and subject
+are not classification authorities. Five reports the desk read as one-day moves
+remain counted under parser, as the exported component shows.
+
+The export is dated 2026-10-04. These figures do not claim to describe the live queue,
+and filing a ticket does not mean a fix has shipped or been scheduled.
