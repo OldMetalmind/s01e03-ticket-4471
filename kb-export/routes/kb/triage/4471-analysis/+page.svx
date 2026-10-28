@@ -1,10 +1,10 @@
 ---
 layout: runbook
-title: '#4471 · triage analysis: 6 distinct problems'
+title: '#4471 · triage analysis: 5 distinct problems'
 owner: harness triage
 status: in-progress
 reviewed: 2026-10-28
-signature: harness
+signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMxODIyMzQsImV4cCI6MTc5MzI2ODYzNH0.pS3recltiS_OwUHZTZNnFgVzwgoCwxgFWpy3kUTg1ZQ
 ---
 
 <script>
@@ -13,7 +13,7 @@ signature: harness
 
 ## Triage Summary
 
-Merged ticket **#4471** contains **427 reports** across **6 distinct problems**. The original desk classification treated this as one issue, but secondary analysis reveals multiple independent bugs affecting date and time handling in `sched-prod`.
+Merged ticket **#4471** contains **427 reports** across **5 distinct problems**. The original desk classification treated this as one issue, but secondary analysis reveals multiple independent bugs affecting date and time handling in `sched-prod`.
 
 ## Problems Identified
 
@@ -28,42 +28,35 @@ Calendar invites display incorrect day-of-week names, causing customers to arriv
 
 **Affected locales**: en-GB (27), en-US (12), pl-PL (10), nl-NL (9), da-DK (9), and others.
 
-**Root cause**: Day-of-week calculation bug in invite generation or date serialization.
+**Root cause**: Day-of-week calculation bug in invite generation or date serialization. May be related to timezone offset or date rounding in the day-name lookup code.
 
 ---
 
-### 2. Month and Day Swapped in Locale Format — 53 reports
-
-**Severity**: Medium  
-**Status**: Open ([GitHub #2](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/2))
-
-Dates show with month and day reversed for specific locales, suggesting inconsistent DD/MM vs MM/DD parsing.
-
-**Example**: "Every booking in June is one day off. Only June."
-
-**Affected locales**: en-GB (15), it-IT (7), de-DE (4), pl-PL (4), fr-FR (4), pt-PT (4), en-US (4).
-
-**Root cause**: Locale-aware date format parsing error. Possibly mixing CLDR locale data with hardcoded format strings.
-
----
-
-### 3. Booking Date Mismatch Between UI and Invite — 53 reports
+### 2. Date Format Parsing Error: DD/MM vs MM/DD Confusion — 132 reports
 
 **Severity**: High  
-**Status**: Open ([GitHub #3](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/3))
+**Status**: Open ([GitHub #7](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/7))
 
-The date shown in the booking confirmation differs completely from the date on the invite. Not just a display issue—the underlying data is inconsistent between systems.
+Dates are parsed or stored with month and day swapped, causing cascading failures across the system. This is the root cause of both:
+- Booking mismatches (UI shows one date, invite shows another)
+- Locale-specific format reversals
 
-**Example**: "Customer booked 3 October and got an invite for 10 March."
+**Examples**:
+- "Booking shows 3 October in UI but invite says 10 March" — day and month completely swapped
+- "Every booking in June is one day off. Only June." — systematic parsing error for specific date ranges
+- Invite says "Tuesday 12 May" when calendar booked for "Monday 11 May"
 
-**Root cause**: Data inconsistency between booking system and invite generation:
-- Different timezone handling between systems
-- Race condition during booking/invite creation  
-- Incorrect date transformation in one system
+**Affected locales**: en-GB (15), it-IT (7), de-DE (4), pl-PL (4), fr-FR (4), pt-PT (4), en-US (4), and others.
+
+**Root cause**: Date parsing or serialization logic incorrectly handles locale-specific date formats:
+- System expects MM/DD but receives DD/MM (or vice versa)
+- Inconsistent format handling between UI layer and backend API
+- Date transformation that doesn't account for locale context
+- Possible issue with CLDR locale data vs hardcoded format strings
 
 ---
 
-### 4. Appointment Auto-Moved Without User Action — 34 reports
+### 3. Appointment Auto-Moved Without User Action — 34 reports
 
 **Severity**: Critical  
 **Status**: Open ([GitHub #4](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/4))
@@ -81,7 +74,7 @@ Appointments automatically change date/time by several months without user actio
 
 ---
 
-### 5. Reminder Sent on Wrong Date — 37 reports
+### 4. Reminder Sent on Wrong Date — 37 reports
 
 **Severity**: Medium  
 **Status**: Open ([GitHub #5](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/5))
@@ -97,12 +90,12 @@ Appointment reminders are sent weeks or months before/after the actual appointme
 
 ---
 
-### 6. Generic Date/Time Issues — 139 reports
+### 5. Other Date/Time Issues — 113 reports
 
 **Severity**: Medium  
 **Status**: Open ([GitHub #6](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/6))
 
-139 reports (32% of merged ticket) don't fit cleanly into categories above. Likely contain:
+113 reports (26% of merged ticket) don't fit cleanly into categories above. Likely contain:
 - Additional timezone issues
 - Locale-specific edge cases
 - Recurring patterns not yet identified
@@ -113,8 +106,8 @@ Appointment reminders are sent weeks or months before/after the actual appointme
 
 ## Coverage
 
-- **Categorized**: 288 reports (67%)
-- **Unclassified**: 139 reports (33%)
+- **Categorized**: 314 reports (74%)
+- **Unclassified**: 113 reports (26%)
 - **Total**: 427 reports
 
 ## Locales Affected
@@ -135,22 +128,24 @@ All 12 tracked locales show issues:
 
 ## GitHub Issues
 
-All 6 problems have been filed as separate issues in the public triage repo:
+All 5 distinct problems have been filed as separate issues in the public triage repo:
 
-- [Issue #1: Wrong Day of Week on Invite](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/1)
-- [Issue #2: Month and Day Swapped in Locale Format](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/2)
-- [Issue #3: Booking Date Mismatch Between UI and Invite](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/3)
-- [Issue #4: Appointment Auto-Moved Without User Action](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/4)
-- [Issue #5: Reminder Sent on Wrong Date](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/5)
-- [Issue #6: Generic Date/Time Issues (Triage Required)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/6)
+- [Issue #1: Wrong Day of Week on Invite](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/1) — 111 reports
+- [Issue #4: Appointment Auto-Moved Without User Action](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/4) — 34 reports
+- [Issue #5: Reminder Sent on Wrong Date](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/5) — 37 reports
+- [Issue #6: Other Date/Time Issues (Triage Required)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/6) — 113 reports
+- [Issue #7: Date Format Parsing Error (DD/MM vs MM/DD)](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/7) — 132 reports
+
+(Issues #2 and #3 were merged into #7)
 
 ## Lessons
 
 - A merged ticket that looks like one issue often contains multiple independent bugs.
+- Overlapping categories signal a root cause that spans multiple surface symptoms. When two categories describe the same underlying failure, merge them.
 - Locale-aware date handling requires consistent application across all systems (booking, invite, reminder, display).
-- A 32% "other" category is a signal to continue triage, not a reason to stop.
+- A 26% "other" category is a signal to continue triage, not a reason to stop.
 - Categorization requires reading individual reports, not just subject lines.
 
 ---
 
-<RenderStamp signature="harness" />
+<RenderStamp {signature} />
