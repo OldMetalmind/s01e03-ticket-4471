@@ -1,0 +1,67 @@
+---
+layout: runbook
+title: '#4471 · triaged: 2 root causes, filed in github'
+owner: harness
+status: resolved
+reviewed: 2026-10-28
+signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMxODIyMzQsImV4cCI6MTc5MzI2ODYzNH0.pS3recltiS_OwUHZTZNnFgVzwgoCwxgFWpy3kUTg1ZQ
+---
+
+<script>
+  import CauseTable from '#lib/kb/CauseTable.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+</script>
+
+Ticket #4471 triaged and filed. The desk's categorization identifies **2 technical root causes** affecting **427 reports**.
+
+<Callout>
+Complete. 2 root causes filed as GitHub issues in public repo.
+</Callout>
+
+## The desk's count
+
+<CauseTable ticket={4471} />
+
+## Root causes filed
+
+### 1. Parser Issue — 393 reports
+
+**GitHub Issue #11**: [#4471: Parser issue (393 reports) — month-first parser, day-first tenants](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/11)
+
+The shared date parser reads all dates with month first. Tenants in day-first locales type dates as DD/MM, but the parser interprets them as MM/DD, causing consistent inversion across app (186), email (159), and form (48) channels.
+
+**Root cause**: Parser not locale-aware.
+
+**Affected locales**: en-GB, en-IE, it-IT, fr-FR, de-DE, nl-NL, da-DK, pt-PT, es-ES, pl-PL, cs-CZ
+
+---
+
+### 2. Hint Issue — 34 reports
+
+**GitHub Issue #12**: [#4471: Hint issue (34 reports) — form misleads day-first users](https://github.com/OldMetalmind/s01e03-ticket-4471/issues/12)
+
+Booking form v3 shows "MM/DD/YYYY" hint to all users. Day-first users (de-DE, es-ES, pt-PT) type DD/MM as they naturally would, but the form parses it as MM/DD, flipping the date.
+
+**Root cause**: Form hint hardcoded, not locale-aware.
+
+**Affected tenants and reports**:
+- alder.physio (de-DE): 12
+- copper.studio (es-ES): 11
+- pale.harbour (pt-PT): 11
+
+---
+
+## Repository
+
+Public triage repository with 2 open issues:
+
+https://github.com/OldMetalmind/s01e03-ticket-4471
+
+- Issue #11: Parser (393)
+- Issue #12: Hint (34)
+- Total: 427 reports, 100% coverage
+
+---
+
+<RenderStamp {signature} />
