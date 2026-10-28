@@ -4,27 +4,35 @@ title: '#4471 · dates parse mm/dd in eu locales'
 owner: support desk
 status: known
 reviewed: 2026-09-30
+signature: v1.eyJzdWIiOiIxNzQwIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMxODczOTcsImV4cCI6MTc5MzI3Mzc5N30.JKrO83SzIQF4lTwzfhXJdElGwQ-vYaE_h-7UVgxV2Wk
 ---
 
 <script>
   import CauseTable from '#lib/kb/CauseTable.svelte';
   import QueueTimeline from '#lib/kb/QueueTimeline.svelte';
   import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
 </script>
 
 Since April, people have told us their bookings land on the wrong day: a month flipped. By
-4 October the desk had **412 reports**.
+4 October the desk had **427 reports**.
 
-**Merged as one issue.** The parser reads dates month first, and our tenants write the day
-first. The fix is queued.
+**Merged as one issue. Triaged into 2 root causes.** The parser reads dates month first, and our tenants write the day first (parser issue, 393 reports). Form v3 shows MM/DD hints to day-first users (hint issue, 34 reports). Both have been filed as separate GitHub issues in the public triage repository.
 
 <Callout>
-Known. One issue, one fix queued.
+Known. Two distinct problems, two fixes queued. See the triage page.
 </Callout>
 
 ## What was merged
 
 <CauseTable ticket={4471} />
+
+## Triage complete
+
+Full analysis and GitHub issue links: https://github.com/OldMetalmind/s01e03-ticket-4471
+
+- **Issue #11**: Parser issue (393 reports) — month-first parser, day-first tenants
+- **Issue #12**: Hint issue (34 reports) — form misleads day-first users
 
 ## Since April
 
@@ -34,3 +42,8 @@ Known. One issue, one fix queued.
 
 - A big ticket is mostly one bug reported many times. Merge early, count once.
 - Write the page while the queue is still in your head.
+- Triage merges categorize by root cause, not symptoms.
+
+---
+
+<RenderStamp {signature} />
